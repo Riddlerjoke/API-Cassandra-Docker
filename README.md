@@ -98,4 +98,99 @@ docker compose down
 ```
 Assurez-vous de toujours nettoyer le cluster après utilisation pour libérer les ressources Docker.
 
-Ceci conclut le guide d'installation et d'utilisation du cluster Cassandra à deux nœuds avec Docker et une API FastAPI. N'hésitez pas à contribuer ou à signaler des problèmes dans ce référentiel GitHub.
+#voici les etapes pour la creation des cluster Cassandra dans Docker
+
+Étape 2 : Importer les données des restaurants
+```
+# Créez un shell Bash dans le conteneur Cassandra.
+docker exec -it cassandra1 /bin/bash
+
+# Connectez-vous à la base de données Cassandra.
+cqlsh
+
+# Créez un keyspace `resto` avec réplication.
+CREATE KEYSPACE IF NOT EXISTS resto WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor': 1};
+
+# Utilisez le keyspace `resto`.
+USE resto;
+
+# Créez les tables `restaurant` et `inspection`.
+CREATE TABLE IF NOT EXISTS restaurant (
+  id int PRIMARY KEY,
+  name varchar,
+  borough varchar,
+  buildingnum varchar,
+  street varchar,
+  zipcode int,
+  phone text,
+  cuisinetype varchar
+);
+
+CREATE TABLE IF NOT EXISTS inspection (
+  idrestaurant int,
+  inspectiondate date,
+  violationcode varchar,
+  violationdescription varchar,
+  criticalflag varchar,
+  score int,
+  grade varchar,
+  PRIMARY KEY (idrestaurant, inspectiondate)
+);
+
+# Créez des index sur les colonnes appropriées.
+CREATE INDEX IF NOT EXISTS restaurant_cuisinetype_idx ON restaurant (cuisinetype);
+CREATE INDEX IF NOT EXISTS inspection_grade_idx ON inspection (grade);
+```
+
+Étape 3 : Copier les fichiers de données dans le conteneur Docker
+```
+# Copiez le fichier de données des restaurants dans le conteneur Cassandra.
+docker cp restaurants.csv cassandra1:/
+
+# Copiez le fichier de données des inspections dans le conteneur Cassandra.
+docker cp restaurants_inspections.csv cassandra1:/
+
+```
+
+Étape 4 : Importer les données dans la base de données Cassandra
+```
+# Connectez-vous à la base de données Cassandra.
+docker exec -it cassandra1 cqlsh
+
+# Utilisez le keyspace `resto`.
+USE resto;
+
+# Copiez les données des restaurants dans la table `restaurant`.
+COPY restaurant (id, name, borough, buildingnum, street, zipcode, phone, cuisinetype) FROM '/restaurants.csv' WITH DELIMITER=',';
+
+# Copiez les données des inspections dans la table `inspection`.
+COPY inspection (idrestaurant, inspectiondate, violationcode, violationdescription, criticalflag, score, grade) FROM '/restaurants_inspections.csv' WITH DELIMITER=',';
+
+```
+Étape 5 : Exécutez quelques requêtes de base
+```
+# Sélectionnez seulement 1 entrée de la table restaurant.
+SELECT * FROM restaurant LIMIT 1;
+
+# Sélectionnez le nombre de restaurants dans la base de données.
+SELECT COUNT(*) FROM restaurant;
+
+# Sélectionnez le nombre d'inspections dans la base de données.
+SELECT COUNT(*) FROM inspection;
+```
+Requêtes CQL supplémentaires
+```
+# Pour obtenir des informations sur un restaurant en fonction de son ID.
+SELECT * FROM restaurant WHERE id = <restaurant_id>;
+
+# Pour obtenir le nom des restaurants en fonction du type de cuisine.
+SELECT name FROM restaurant WHERE cuisinetype = 'American';
+
+# Pour obtenir une entrée aléatoire de la table restaurant.
+SELECT * FROM restaurant LIMIT 1;
+
+# Pour obtenir les ID des restaurants ayant une note 'A' dans les inspections (limité à 10 résultats).
+SELECT idrestaurant FROM inspection WHERE grade = 'A' LIMIT 10;
+```
+
+N'hésitez pas à adapter ces étapes en fonction de votre configuration et de vos besoins spécifiques.
