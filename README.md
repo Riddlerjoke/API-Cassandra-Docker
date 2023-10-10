@@ -1,4 +1,6 @@
-Guide de configuration d'un cluster Cassandra à deux nœuds avec Docker et une API FastAPI
+#Guide de configuration d'un cluster Cassandra à deux nœuds avec Docker et une API FastAPI
+
+
 Ce guide explique comment configurer un cluster Cassandra à deux nœuds à l'aide de Docker et comment le connecter à une API FastAPI. Le cluster Cassandra contient deux nœuds, node1 et node2, pour la réplication des données. L'API FastAPI permet d'accéder et de manipuler les données stockées dans le cluster Cassandra.
 
 Configuration du projet
